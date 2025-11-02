@@ -1,6 +1,7 @@
 pub mod error;
 pub mod macros;
 pub mod math;
+pub mod sampling;
 pub mod traits;
 
 pub use error::*;
