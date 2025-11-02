@@ -1,4 +1,6 @@
 pub mod float;
+pub mod geometry;
+pub mod interpolation;
 pub mod matrix;
 pub mod point;
 pub mod probpart;
@@ -7,6 +9,8 @@ pub mod solvers;
 pub mod vector;
 
 pub use float::*;
+pub use geometry::*;
+pub use interpolation::*;
 pub use matrix::*;
 pub use point::*;
 pub use probpart::*;
