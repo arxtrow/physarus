@@ -141,23 +141,29 @@ pub struct Octahedral2 {
 
 impl From<Unit3> for Octahedral2 {
     fn from(v: Unit3) -> Self {
-        let v = v / (v.x().abs() + v.y().abs() + v.z().abs());
+        // sphere3 vector to octahedral3
+        let v_oct = v / (v.x().abs() + v.y().abs() + v.z().abs());
 
-        if v.z() >= 0.0 {
-            let x = encode_float_to_u16(v.x());
-            let y = encode_float_to_u16(v.y());
+        // remap octahedral3 to square2
+        let (x, y) = if v_oct.z() >= 0.0 {
+            let x = encode_float_to_u16(v_oct.x());
+            let y = encode_float_to_u16(v_oct.y());
 
-            Self { x, y }
+            (x, y)
         } else {
             // Reflect across x + y = 1 and restore quadrant by signum
-            let x = (1.0 - v.y().abs()) * v.x().signum();
-            let y = (1.0 - v.x().abs()) * v.y().signum();
+            let x = (1.0 - v_oct.y().abs()) * v_oct.x().signum();
+            let y = (1.0 - v_oct.x().abs()) * v_oct.y().signum();
 
             let x = encode_float_to_u16(x);
             let y = encode_float_to_u16(y);
 
-            Self { x, y }
-        }
+            (x, y)
+        };
+
+        // and since we know for v_oct L1 norm is 1.0
+        // z could be decoded later as 1 - (x.abs() + y.abs())
+        Self { x, y }
     }
 }
 

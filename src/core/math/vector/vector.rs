@@ -277,7 +277,7 @@ where
         // |self - rhs|^2 = |self|^2 + |rhs|^2 - 2|self||rhs|cos(a) = 1 - 2cos(a)
         // |self + rhs|^2 = |self|^2 + |rhs|^2 + 2|self||rhs|cos(a) = 1 + 2cos(a)
         //
-        // tan^2(a/2) = |1 - 2cosa| / |1 + 2cos(a)| = |self - rhs|^2 / |self + rhs|^2
+        // tan^2(a/2) = |1 - 2cos(a)| / |1 + 2cos(a)| = |self - rhs|^2 / |self + rhs|^2
         // => tan(a/2) = |self - hrs| / |self + rhs|
         // => a = 2.0 * atan2(|self - rhs|, |self + rhs|)
         Rad::new(2.0 * (self - rhs).len().atan2((self + rhs).len()))
