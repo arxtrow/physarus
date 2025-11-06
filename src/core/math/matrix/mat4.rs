@@ -26,7 +26,7 @@ impl Mat4 {
 
     #[inline]
     pub fn upper3x3(&self) -> Mat3 {
-        self.sub_mat(0..3, 0..3)
+        self.submat(0..3, 0..3)
     }
 
     pub fn det(&self) -> Float {

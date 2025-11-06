@@ -73,7 +73,7 @@ impl<const R: usize, const C: usize> Matrix<R, C> {
 
     /// Extract submatrix
     #[inline]
-    pub fn sub_mat<const SR: usize, const SC: usize>(
+    pub fn submat<const SR: usize, const SC: usize>(
         &self,
         row_range: Range<usize>,
         col_range: Range<usize>,
