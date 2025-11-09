@@ -148,11 +148,11 @@ impl<From: SpaceSeal, To: SpaceSeal> Transform<From, To> {
         }
     }
 
-    pub fn transform<T: Transformable<From = From>>(&self, value: &T) -> T::Output<To> {
+    pub fn transform<T: Transformable<From, To>>(&self, value: &T) -> T::Output<To> {
         value.apply_transform(self)
     }
 
-    pub fn inverse_transform<T: Transformable<From = From>>(&self, value: &T) -> T::Output<From> {
+    pub fn inverse_transform<T: Transformable<From, To>>(&self, value: &T) -> T::Output<From> {
         value.apply_inverse(self)
     }
 
@@ -221,30 +221,23 @@ where
     return Transform::new_from_to(self.m * rhs.m, rhs.m_inv * self.m_inv);
 }
 
-pub trait Transformable {
-    type From: SpaceSeal;
-
-    type Output<To: SpaceSeal>;
+pub trait Transformable<From: SpaceSeal, To: SpaceSeal> {
+    type Output<ToOutput: SpaceSeal>;
 
     /// Applies Transform in semantic correct way
-    fn apply_transform<To: SpaceSeal>(
-        &self,
-        transform: &Transform<Self::From, To>,
-    ) -> Self::Output<To>;
+    fn apply_transform(&self, transform: &Transform<From, To>) -> Self::Output<To>;
 
     /// Applies Inverse Transform in semantic correct way
-    fn apply_inverse<To: SpaceSeal>(
-        &self,
-        transform: &Transform<Self::From, To>,
-    ) -> Self::Output<Self::From>;
+    fn apply_inverse(&self, transform: &Transform<From, To>) -> Self::Output<From>;
 }
 
-impl<Scale: ScaleSeal, From: SpaceSeal> Transformable for Vec3<_Direction, Scale, From> {
-    type From = From;
-    type Output<To: SpaceSeal> = Direction3<To>;
+impl<Scale: ScaleSeal, From: SpaceSeal, To: SpaceSeal> Transformable<From, To>
+    for Vec3<_Direction, Scale, From>
+{
+    type Output<ToOutput: SpaceSeal> = Direction3<ToOutput>;
 
     /// Transform `Direction` with `M₃ₓ₃`
-    fn apply_transform<To: SpaceSeal>(&self, transform: &Transform<From, To>) -> Self::Output<To> {
+    fn apply_transform(&self, transform: &Transform<From, To>) -> Self::Output<To> {
         let m3x3 = transform.m.upper3x3();
 
         let tv = m3x3 * self;
@@ -253,10 +246,7 @@ impl<Scale: ScaleSeal, From: SpaceSeal> Transformable for Vec3<_Direction, Scale
     }
 
     /// Inverse Transform `Direction` with `(M₃ₓ₃)⁻¹`
-    fn apply_inverse<To: SpaceSeal>(
-        &self,
-        transform: &Transform<Self::From, To>,
-    ) -> Self::Output<Self::From> {
+    fn apply_inverse(&self, transform: &Transform<From, To>) -> Self::Output<From> {
         let m_inv3x3 = transform.m_inv.upper3x3();
 
         let iv = m_inv3x3 * self;
@@ -265,12 +255,11 @@ impl<Scale: ScaleSeal, From: SpaceSeal> Transformable for Vec3<_Direction, Scale
     }
 }
 
-impl<From: SpaceSeal> Transformable for Normal3<From> {
-    type From = From;
-    type Output<To: SpaceSeal> = Normal3<To>;
+impl<From: SpaceSeal, To: SpaceSeal> Transformable<From, To> for Normal3<From> {
+    type Output<ToOutput: SpaceSeal> = Normal3<ToOutput>;
 
     /// Transform `Normal3` with `((M₃ₓ₃)⁻¹)ᵀ`
-    fn apply_transform<To: SpaceSeal>(&self, transform: &Transform<From, To>) -> Self::Output<To> {
+    fn apply_transform(&self, transform: &Transform<From, To>) -> Self::Output<To> {
         // Normals are Hodge duals of bivectors
         // bivectors represent oriented planes with area and transform extensively (area-like)
         // then normals must transform inversely to preserve geometric relationships like perpendicularity with vectors in plane.
@@ -294,24 +283,20 @@ impl<From: SpaceSeal> Transformable for Normal3<From> {
     }
 
     /// Inverse Transform `Normal3` with `(M₃ₓ₃)ᵀ`
-    fn apply_inverse<To: SpaceSeal>(
-        &self,
-        transform: &Transform<Self::From, To>,
-    ) -> Self::Output<Self::From> {
+    fn apply_inverse(&self, transform: &Transform<From, To>) -> Self::Output<From> {
         let tn = transform.m.upper3x3().transpose() * self;
 
         Normal3::new_normalize(tn.x(), tn.y(), tn.z())
     }
 }
 
-impl<From: SpaceSeal> Transformable for Point3<From> {
-    type From = From;
-    type Output<To: SpaceSeal> = Point3<To>;
+impl<From: SpaceSeal, To: SpaceSeal> Transformable<From, To> for Point3<From> {
+    type Output<ToOutput: SpaceSeal> = Point3<ToOutput>;
 
     /// Transform `Point3` using full `M`
     ///
     /// Applies perspective division after transformation.
-    fn apply_transform<To: SpaceSeal>(&self, transform: &Transform<From, To>) -> Self::Output<To> {
+    fn apply_transform(&self, transform: &Transform<From, To>) -> Self::Output<To> {
         let v = Direction4::<From>::new(self[0], self[1], self[2], 1.0);
 
         let tv = transform.m * v;
@@ -324,10 +309,7 @@ impl<From: SpaceSeal> Transformable for Point3<From> {
     /// Inverse Transform `Point3` using full `M⁻¹`
     ///
     /// Applies perspective division after transformation.
-    fn apply_inverse<To: SpaceSeal>(
-        &self,
-        transform: &Transform<Self::From, To>,
-    ) -> Self::Output<Self::From> {
+    fn apply_inverse(&self, transform: &Transform<From, To>) -> Self::Output<From> {
         let v = Direction4::<From>::new(self[0], self[1], self[2], 1.0);
 
         let tv = transform.m_inv * v;
@@ -338,14 +320,10 @@ impl<From: SpaceSeal> Transformable for Point3<From> {
     }
 }
 
-impl<From: SpaceSeal> Transformable for Ray3<From> {
-    type From = From;
-    type Output<To: SpaceSeal> = Ray3<To>;
+impl<From: SpaceSeal, To: SpaceSeal> Transformable<From, To> for Ray3<From> {
+    type Output<ToOutput: SpaceSeal> = Ray3<ToOutput>;
 
-    fn apply_transform<To: SpaceSeal>(
-        &self,
-        transform: &Transform<Self::From, To>,
-    ) -> Self::Output<To> {
+    fn apply_transform(&self, transform: &Transform<From, To>) -> Self::Output<To> {
         let o = self.o.apply_transform(transform);
         let d = self.d.apply_transform(transform).normalize();
 
@@ -359,10 +337,7 @@ impl<From: SpaceSeal> Transformable for Ray3<From> {
         Ray3::new(o, d, self.time, t_max)
     }
 
-    fn apply_inverse<To: SpaceSeal>(
-        &self,
-        transform: &Transform<Self::From, To>,
-    ) -> Self::Output<Self::From> {
+    fn apply_inverse(&self, transform: &Transform<From, To>) -> Self::Output<From> {
         let o = self.o.apply_inverse(transform);
         let d = self.d.apply_inverse(transform).normalize();
 
@@ -377,14 +352,10 @@ impl<From: SpaceSeal> Transformable for Ray3<From> {
     }
 }
 
-impl<From: SpaceSeal> Transformable for Bounds3<From> {
-    type From = From;
-    type Output<To: SpaceSeal> = Bounds3<To>;
+impl<From: SpaceSeal, To: SpaceSeal> Transformable<From, To> for Bounds3<From> {
+    type Output<ToOutput: SpaceSeal> = Bounds3<ToOutput>;
 
-    fn apply_transform<To: SpaceSeal>(
-        &self,
-        transform: &Transform<Self::From, To>,
-    ) -> Self::Output<To> {
+    fn apply_transform(&self, transform: &Transform<From, To>) -> Self::Output<To> {
         let mut bb = Bounds3::default();
 
         for i in 0..8 {
@@ -395,10 +366,7 @@ impl<From: SpaceSeal> Transformable for Bounds3<From> {
         bb
     }
 
-    fn apply_inverse<To: SpaceSeal>(
-        &self,
-        transform: &Transform<Self::From, To>,
-    ) -> Self::Output<Self::From> {
+    fn apply_inverse(&self, transform: &Transform<From, To>) -> Self::Output<From> {
         todo!()
     }
 }
